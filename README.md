@@ -1,2 +1,2 @@
 # Miscellaneous
-Collection of scripts
+Collection of home brewed scripts
