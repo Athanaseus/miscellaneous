@@ -25,4 +25,4 @@ def get_argparser():
 def main():
     parser = get_argparser()
     args = parser.parse_args()
-    casa_header_edit = args.image
+    casa_header_edit(args.image, args.image)
