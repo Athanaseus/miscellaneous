@@ -7,14 +7,15 @@ from astropy.io import fits as fitsio
 def cube_masking(cube_name, threshold, out_mask=None):
     "Create a mask from a cube image"
     hdr = fits.open(cube_name)
-    data_cube = hdr[0].data
+    data = hdr[0].data
     data[data>threshold] = 1.0
     data[data<threshold] = 0.0
 
     header = hdr[0].header
     if out_mask is None:
         out_mask = '{}-mask.fits'.format(cube_name.split('.fits')[0])
-    fits.writeto(out_mask, data, header, clobber=True)
+    fits.writeto(out_mask, data, header, overwrite=True)
+    print("Output mask: {}".format(out_mask))
 
 
 def get_argparser():
@@ -31,7 +32,7 @@ def get_argparser():
 def main():
     parser = get_argparser()
     args = parser.parse_args()
-    cube_masking(args.image, args.thresh, args.out)
+    cube_masking(args.image, float(args.thresh), args.out)
 
 
 if __name__ == '__main__':
