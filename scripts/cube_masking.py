@@ -4,15 +4,15 @@ from functools import partial
 from astropy.io import fits as fitsio
 
 
-def cube_masking(cube_name, threshold, out_mask=None)
+def cube_masking(cube_name, threshold, out_mask=None):
     "Create a mask from a cube image"
     hdr = fits.open(cube_name)
-    data = hdr[0].data
-    data[data>"countour_level_from_kvis"] = treshold
-    data[data<"countour_level_from_kvis"] = 0.0
-    header = hdr[0].header
+    data_cube = hdr[0].data
+    data[data>threshold] = 1.0
+    data[data<threshold] = 0.0
 
-    if out_mask is None
+    header = hdr[0].header
+    if out_mask is None:
         out_mask = '{}-mask.fits'.format(cube_name.split('.fits')[0])
     fits.writeto(out_mask, data, header, clobber=True)
 
@@ -24,14 +24,14 @@ def get_argparser():
     argument = partial(parser.add_argument)
     argument('-i', '--image',  dest='image', help='Name of the CASA image fits file')
     argument('-o', '--out-mask',  dest='out', help='Name of the CASA output image fits file')
-    argument('-t', '--threshold',  dest='tresh', help='Threshold value in units of Jy/beam')
+    argument('-t', '--threshold',  dest='thresh', help='Threshold value in units of Jy/beam')
     return parser
 
 
 def main():
     parser = get_argparser()
     args = parser.parse_args()
-    casa_header_edit(args.image, args.out if args.out else 'corr_%s' % args.image)
+    cube_masking(args.image, args.thresh, args.out)
 
 
 if __name__ == '__main__':
