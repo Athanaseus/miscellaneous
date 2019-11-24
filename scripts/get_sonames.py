@@ -15,6 +15,8 @@
 #dpkg -x libcasa-python3-4_3.2.1-1kern1_amd64.deb /tmp/libcasa-python3
 #dpkg -x libcasa-tables4_3.2.1-1kern1_amd64.deb /tmp/libcasa-tables
 
+# TODO: Libraries with numbers output: lib34 -> lib3-4
+
 import subprocess
 from glob import glob
 VERSION = '3.2.1'
