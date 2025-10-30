@@ -83,7 +83,6 @@ def plot_runs(runs, max_iter=None, min_iter=None, output_file="wsclean_flux_prog
 
 
 def main():
-    import sys
     if len(sys.argv) <= 1 or len(sys.argv)>3 :
         print("Usage: python plot_wsclean_flux.py <wsclean_log_file>")
         sys.exit(1)
