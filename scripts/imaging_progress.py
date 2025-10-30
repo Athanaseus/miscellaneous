@@ -4,7 +4,6 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import numpy as np
 
 
 def parse_wsclean_log(filepath):
@@ -76,12 +75,12 @@ def plot_runs(runs, max_iter=None, min_iter=None, output_file="wsclean_flux_prog
 
     for i, (iterations, fluxes, times) in enumerate(runs):
         color = colors(i / max(1, num_runs - 1))
-        plt.plot(iterations, np.array(fluxes), label=f"Run {i+1}", color=color, linewidth=2)
+        plt.plot(iterations, fluxes, label=f"Run {i+1}", color=color, linewidth=2)
 
         # Compute elapsed time in hours for this run
         if times:
             t0 = times[0]
-            elapsed_hours = np.array([(t - t0).total_seconds() / 3600 for t in times])
+            elapsed_hours = [(t - t0).total_seconds() / 3600 for t in times]
             # store last for axis calibration
             last_elapsed = elapsed_hours[-1]
 
