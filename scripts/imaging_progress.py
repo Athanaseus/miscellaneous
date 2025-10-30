@@ -68,10 +68,10 @@ def plot_runs(runs, max_iter=None, min_iter=None, output_file="wsclean_flux_prog
     
     for i, (iterations, fluxes) in enumerate(runs):
         color = colors(i / max(1, num_runs - 1))
-        plt.plot(iterations, np.array(fluxes)*1000, label=f"Run {i+1}", color=color, linewidth=2)
+        plt.plot(iterations, np.array(fluxes), label=f"Run {i+1}", color=color, linewidth=2)
 
     plt.xlabel("Iteration", fontsize=12)
-    plt.ylabel("Peak Flux (Jy)", fontsize=12)
+    plt.ylabel("Peak Flux (mJy)", fontsize=12)
     plt.title("WSClean Selfcal Flux Convergence", fontsize=13)
     plt.legend()
     plt.xlim(min_iter if min_iter is not None else min(iterations),
