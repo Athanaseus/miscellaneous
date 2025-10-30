@@ -83,7 +83,7 @@ def plot_runs(runs, max_iter=None, min_iter=None, output_file="wsclean_flux_prog
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) <= 1 or len(sys.argv)>3 :
         print("Usage: python plot_wsclean_flux.py <wsclean_log_file>")
         sys.exit(1)
 
@@ -91,6 +91,8 @@ def main():
     if not os.path.exists(log_file):
         print(f"❌ File not found: {log_file}")
         sys.exit(1)
+    import sys
+    max_iter = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     runs = parse_wsclean_log(log_file)
     if not runs:
@@ -100,7 +102,7 @@ def main():
     for i, (iterations, fluxes) in enumerate(runs):
         print_terminal_graph(i + 1, iterations, fluxes)
 
-    plot_runs(runs)
+    plot_runs(runs, max_iter)
 
 
 import matplotlib.pyplot as plt
