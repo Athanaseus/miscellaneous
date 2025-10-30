@@ -6,31 +6,39 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 
+
 def parse_wsclean_log(filepath):
-    """Parse WSClean log into separate runs with iteration-flux pairs."""
+    """Parse WSClean log into runs with iteration, flux, and timestamps."""
     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         content = f.read()
 
-    # Split into runs by imaging table marker
     runs = re.split("=== IMAGING TABLE ===", content)
     parsed_runs = []
 
     for r in runs:
-        iterations = []
-        fluxes = []
+        iterations, fluxes, times = [], [], []
         for line in r.splitlines():
             match = re.search(
-                r"(?:\(\d+\)\s*)?Iteration\s+(\d+),\s*scale\s*\d+\s*px\s*:\s*([-\d.]+)\s*([µm]?)Jy",
-                line, re.IGNORECASE)
+                r"(\d{4}-[A-Za-z]{3}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+).*Iteration\s+(\d+),\s*scale\s*\d+\s*px\s*:\s*([-\d.]+)\s*([µm]?)Jy",
+                line)
             if match:
-                iterations.append(int(match.group(1)))
-                flux = float(match.group(2))
-                unit = match.group(3)
-                if unit == r"µ":
+                timestamp_str = match.group(1)
+                try:
+                    t = datetime.strptime(timestamp_str, "%Y-%b-%d %H:%M:%S.%f")
+                except ValueError:
+                    continue
+                times.append(t)
+
+                iterations.append(int(match.group(2)))
+                flux = float(match.group(3))
+                unit = match.group(4)
+                if unit == "":
+                    flux *= 1e-6  # Jy → mJy
+                if unit == "µ":
                     flux *= 1e-3  # µJy → mJy
                 fluxes.append(flux)
         if iterations:
-            parsed_runs.append((iterations, fluxes))
+            parsed_runs.append((iterations, fluxes, times))
     return parsed_runs
 
 
@@ -61,30 +69,48 @@ def print_terminal_graph(run_id, iterations, fluxes, chunk_size=1):
 
 
 def plot_runs(runs, max_iter=None, min_iter=None, output_file="wsclean_flux_progress.png"):
-    """Plot multiple WSClean runs with legends and color separation."""
+    """Plot multiple WSClean runs with legends, color separation, and time axis."""
     plt.figure(figsize=(8, 6))
     colors = cm.viridis_r
     num_runs = len(runs)
-    
-    for i, (iterations, fluxes) in enumerate(runs):
+
+    for i, (iterations, fluxes, times) in enumerate(runs):
         color = colors(i / max(1, num_runs - 1))
         plt.plot(iterations, np.array(fluxes), label=f"Run {i+1}", color=color, linewidth=2)
 
+        # Compute elapsed time in hours for this run
+        if times:
+            t0 = times[0]
+            elapsed_hours = np.array([(t - t0).total_seconds() / 3600 for t in times])
+            # store last for axis calibration
+            last_elapsed = elapsed_hours[-1]
+
+    plt.axhline(0, color='black', linewidth=2.5, alpha=0.8)
     plt.xlabel("Iteration", fontsize=12)
     plt.ylabel("Peak Flux (mJy)", fontsize=12)
     plt.title("WSClean Selfcal Flux Convergence", fontsize=13)
     plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.4)
+
+    # Main x-axis limits
     plt.xlim(min_iter if min_iter is not None else min(iterations),
              max_iter if max_iter is not None else max(iterations))
-    plt.grid(True, linestyle="--", alpha=0.4)
+
+    # === Add top x-axis for elapsed time in hours ===
+    ax1 = plt.gca()
+    ax2 = ax1.twiny()
+    iter_min, iter_max = ax1.get_xlim()
+    ax2.set_xlim(0, last_elapsed)
+    ax2.set_xlabel("Elapsed Time (hours)", fontsize=12)
+
     plt.tight_layout()
     plt.savefig(output_file, dpi=200)
     print(f"\n✅ Saved plot to: {os.path.abspath(output_file)}")
 
 
 def main():
-    if len(sys.argv) <= 1 or len(sys.argv)>3 :
-        print("Usage: python plot_wsclean_flux.py <wsclean_log_file>")
+    if len(sys.argv) <= 1:
+        print("Usage: python plot_wsclean_flux.py <wsclean_log_file> <max_iter>")
         sys.exit(1)
 
     log_file = sys.argv[1]
@@ -98,46 +124,10 @@ def main():
         print("⚠️ No valid iterations found in the log.")
         sys.exit(0)
 
-    for i, (iterations, fluxes) in enumerate(runs):
+    for i, (iterations, fluxes, times) in enumerate(runs):
         print_terminal_graph(i + 1, iterations, fluxes)
 
     plot_runs(runs, max_iter)
 
-
-import matplotlib.pyplot as plt
-
-def plot_run_png(run_id, iterations, fluxes, min_iter=None, max_iter=10000, filename=None):
-    """Plot iteration vs flux for a run and save PNG."""
-    # Apply iteration cut
-    if min_iter is not None or max_iter is not None:
-        filtered = [(it, fl) for it, fl in zip(iterations, fluxes)
-                    if (min_iter is None or it >= min_iter) and (max_iter is None or it <= max_iter)]
-        if not filtered:
-            print(f"No iterations in range for run {run_id}")
-            return
-        iterations, fluxes = zip(*filtered)
-
-    # Plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(iterations, fluxes*1000, marker='o', linestyle='-', label=f'Run {run_id}')
-    plt.xlabel("Iteration")
-    plt.ylabel("Flux [Jy]")
-    plt.title(f"WSClean Iterations vs Flux - Run {run_id}")
-    plt.grid(True)
-    plt.legend()
-
-    if min_iter is not None or max_iter is not None:
-        plt.xlim(min_iter if min_iter is not None else min(iterations),
-                 max_iter if max_iter is not None else max(iterations))
-
-    if filename is None:
-        filename = f"run_{run_id}_iterations.png"
-    plt.savefig(filename, dpi=150)
-    plt.close()
-
-
-
-
 if __name__ == "__main__":
     main()
-
